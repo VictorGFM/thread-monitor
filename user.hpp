@@ -3,12 +3,15 @@
 #endif
 
 #include <string>
-#include <thread>
 #include <vector>
+#include <iostream>
+#include <pthread.h>
+#include <unistd.h>
 
 using std::string;
-using std::thread;
 using std::vector;
+using std::cout;
+using std::endl;
 
 class User {
 
@@ -16,16 +19,14 @@ class User {
         User(string name, int ovenTimes) {
             this->name = name;
             this->ovenTimes = ovenTimes;
-            // this->t = t;
         };
 
         string Name();
         int OvenTimes();
-        // void Wait(void (*f) (User*));
         bool CanUse(vector<User*> queue);
         void UseOven();
         void Work();
-        thread t;
+        pthread_t t;
 
     private:
         string name;

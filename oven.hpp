@@ -3,34 +3,34 @@
 #endif
 
 #include "user.hpp"
-#include <chrono>
-#include <mutex>
-#include <thread>
 #include <vector>
+#include <pthread.h>
+#include <unistd.h>
 
-using std::mutex;
 using std::vector;
-using std::thread;
 
 class Oven {
 
     public:
         Oven() {
-            raj = thread(RajStart);
+            if(pthread_create(&raj, NULL, RajStart, (void*) this) < 0) {
+                cout << "Error on creating thread!" << endl;
+                exit(EXIT_FAILURE);
+            }
         };
 
-        void Wait(User* u);
-        void Use(User* u);
-        void Free(User* u);
+        void Wait(User* user);
+        void Use(User* user);
+        void Free(User* user);
         bool IsInUse();
         bool HasQueue();
-        thread raj;
+        pthread_t raj;
 
     private:
-        void RajStart();
-        void UserWait(User* u);
+        static void* RajStart(void* args);
+        static void* UserWait(void* args);
 
         bool inUse;
-        mutex mtx;
+        pthread_mutex_t mtx;
         vector<User*> userQueue;
 };

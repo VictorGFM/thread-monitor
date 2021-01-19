@@ -1,34 +1,47 @@
 #include "oven.hpp"
 
+struct parameters_struct {
+    Oven* object;
+    User* user;
+} parameters;
+
 void Oven::Use(User* user) {
-    mtx.lock();
+    pthread_mutex_lock(&mtx);
     this->inUse = true;
-    // sleep(1);
     user->UseOven();
     this->Free(user);
     this->inUse = false;
-    mtx.unlock();
+    pthread_mutex_unlock(&mtx);
 }
 
 void Oven::Wait(User* user) {
     this->userQueue.push_back(user);
-    printf("\n%s quer usar o forno", user->Name());
-    // user->Wait(UserWait);
-    user->t = thread(UserWait);
+    cout << endl << user->Name() << " quer usar o forno";
+    struct parameters_struct* parameters = (struct parameters_struct*) malloc(sizeof(struct parameters_struct*));
+    parameters->object = this;
+    parameters->user = user;
+    
+    if(pthread_create(&user->t, NULL, UserWait, (void*) parameters) < 0) {
+        cout << "Error on creating thread!" << endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
-void Oven::UserWait(User* user) {
+void* Oven::UserWait(void* args) {
+    struct parameters_struct* parameters = (struct parameters_struct*)args;
+    Oven* object = parameters->object;
+    User* user = parameters->user;
     while(1) {
-        if (this->inUse) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+        if (object->inUse) {
+            sleep(1);
             continue;
         }
 
-        if (!user->CanUse(this->userQueue)) {
+        if (!user->CanUse(object->userQueue)) {
             continue;
         }
 
-        this->Use(user);
+        object->Use(user);
     }
 }
 
@@ -44,21 +57,23 @@ void Oven::Free(User* user) {
     }
 }
 
-void Oven::RajStart() {
+void* Oven::RajStart(void* args) {
+    Oven* object = (Oven*) args;
     int noUseTime = 0;
     while (1) {
-        if (this->inUse) {
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+        if (object->inUse) {
+            sleep(5);
             continue;
         }
-        if (this->userQueue.empty()) {
-            std::this_thread::sleep_for(std::chrono::seconds(5));
+        if (object->userQueue.empty()) {
+            sleep(5);
             noUseTime+=5;
             if (noUseTime > 5) {
-                return;
+                break;
             }
             continue;
         }
-        this->Use(this->userQueue.front());
+        object->Use(object->userQueue.front());
     }
+    return 0;
 }

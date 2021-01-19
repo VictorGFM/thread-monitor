@@ -1,14 +1,13 @@
+#include "oven.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <random>
-#include <thread>
-#include "oven.hpp"
-#include "user.hpp"
+#include <pthread.h>
 
 using std::cout;
 using std::default_random_engine;
 using std::endl;
-using std::thread;
 using std::shuffle;
 
 
@@ -33,10 +32,10 @@ void createQueue(int ovenTimes) {
     }
 
     for (int i = 0; i < 8; i++) {
-        users[i]->t.join();
+        pthread_join(users[i]->t, NULL);
     }
 
-    oven->raj.join();
+    pthread_join(oven->raj, NULL);
 }
 
 int main(int paramsLen, char *params[]) {

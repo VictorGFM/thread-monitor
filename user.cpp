@@ -8,11 +8,6 @@ int User::OvenTimes() {
     return this->ovenTimes;
 }
 
-// void User::Wait(void (*f) (User*)) {
-//     this->t = thread(f);
-//     printf("\n%s quer usar o forno", this->name);
-// }
-
 bool queueContains(vector<User*> queue, string name) {
     for (auto u : queue) {
         if (u->Name() == name) {
@@ -102,18 +97,20 @@ bool User::CanUse(vector<User*> queue) {
             return true;
         }
         return false;
+    } else {
+        return false;
     }
 }
 
 void User::UseOven() {
-    printf("\n%s comeca a esquentar algo", this->name);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    cout << endl << this->name << " comeca a esquentar algo";
+    sleep(1);
     this->ovenTimes--;
-    printf("\n%s vai comer", this->name);
+    cout << endl << this->name << " vai comer";
 }
 
 void User::Work() {
-    printf("\n%s voltou para o trabalho", this->name);
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+     cout << endl << this->name << " voltou para o trabalho";
+    sleep(5);
 }
 

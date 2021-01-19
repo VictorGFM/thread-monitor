@@ -1,10 +1,10 @@
 ALL = tp1
-SRC = $(wildcard *.cpp */*.cpp)
-OBJ = $(patsubst %.cpp, %.o, $(SRC))
+SRC = $(wildcard *.cpp)
+OBJ = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
 
 CC = g++
 
-CPPFLAGS = -g -Wall -std=c++11 -O3 -lpthread
+CPPFLAGS = -g -Wall -std=c++11 -O3 -pthread
 
 all: $(ALL)
 
@@ -14,4 +14,3 @@ $(ALL): $(OBJ)
 
 clean:
 	rm $(ALL) *.o
-
