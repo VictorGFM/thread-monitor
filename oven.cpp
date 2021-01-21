@@ -1,63 +1,84 @@
 #include "oven.hpp"
 
-struct parameters_struct {
-    Oven* object;
-    User* user;
-} parameters;
 
-void Oven::Use(User* user) {
-    pthread_mutex_lock(&mtx);
-    this->inUse = true;
-    user->UseOven();
-    this->Free(user);
-    this->inUse = false;
-    pthread_mutex_unlock(&mtx);
-}
+void Oven::wait(Character* character) {
+    cout << character->getName() << " quer usar o forno" << endl;
+    this->queue.insert(character->getName());
 
-void Oven::Wait(User* user) {
-    this->userQueue.push_back(user);
-    cout << endl << user->Name() << " quer usar o forno";
-    struct parameters_struct* parameters = (struct parameters_struct*) malloc(sizeof(struct parameters_struct*));
-    parameters->object = this;
-    parameters->user = user;
-    
-    if(pthread_create(&user->t, NULL, UserWait, (void*) parameters) < 0) {
-        cout << "Error on creating thread!" << endl;
-        exit(EXIT_FAILURE);
-    }
-}
+    pthread_mutex_lock(&mutex);
 
-void* Oven::UserWait(void* args) {
-    struct parameters_struct* parameters = (struct parameters_struct*)args;
-    Oven* object = parameters->object;
-    User* user = parameters->user;
-    while(1) {
-        if (object->inUse) {
-            sleep(1);
-            continue;
-        }
-
-        if (!user->CanUse(object->userQueue)) {
-            continue;
-        }
-
-        object->Use(user);
-    }
-}
-
-void Oven::Free(User* user) {
-    for (auto it = this->userQueue.begin(); it != this->userQueue.end(); ++it) {
-        if ((*it)->Name() == user->Name()) {
-            this->userQueue.erase(it);
-            user->Work();
-            if (user->OvenTimes() > 0) {
-                this->Wait(user);
+    if(character->getName() == SHELDON || character->getName() == AMY) {
+        cout << character->getName() << " Pronto para usar o forno" << endl;
+        if(queue.find(SHELDON) != queue.end()) { //modificar condicional
+            if(queue.find(LEONARD) != queue.end() && queue.find(PENNY) != queue.end()) {
+                //dorme
             }
+        } else if(existe algum casal na fila?) {
+            //dorme
+        } else if(queue.find(LEONARD) != queue.end() || queue.find(PENNY) != queue.end())  {
+            //dorme
+        }
+    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
+        if(queue.find(BERNARDETTE) != queue.end())  { //modificar condicional
+            if(queue.find(SHELDON) != queue.end() && queue.find(AMY) != queue.end()) {
+                cout << character->getName() << " Esperando SHELDON ou AMY terminarem de usar o forno" << endl;
+                if(pthread_cond_wait(&sheldonOrAmyInQueue, &mutex) != 0) {
+                    perror("Error on condition variable wait");
+                    exit(EXIT_FAILURE); 
+                }
+                cout << character->getName() << " Pronto para usar o forno" << endl;
+            } else {
+                if(pthread_cond_signal(&sheldonOrAmyInQueue) != 0) {
+                    perror("Error on condition variable signal");
+                    exit(EXIT_FAILURE); 
+                }
+                if(pthread_cond_wait(&howardAndBernardetteInQueue, &mutex) != 0) {
+                    perror("Error on condition variable wait");
+                    exit(EXIT_FAILURE); 
+                }
+            }
+        } else if(queue.find(SHELDON) != queue.end() || queue.find(AMY) != queue.end()) {
+            cout << character->getName() << " Esperando SHELDON ou AMY terminarem de usar o forno" << endl;
+            if(pthread_cond_wait(&sheldonOrAmyInQueue, &mutex) != 0) {
+                perror("Error on condition variable wait");
+                exit(EXIT_FAILURE); 
+            }
+            cout << character->getName() << " Pronto para usar o forno" << endl;
+        }
+    }
+
+    
+}
+
+void Oven::free(Character* character) {
+    queue.erase(character->getName());
+    cout << character->getName() << " Terminou de usar o forno" << endl;
+    pthread_mutex_unlock(&mutex);
+
+    if(character->getName() == SHELDON || character->getName() == AMY)  {
+        if(queue.find(SHELDON) == queue.end() && queue.find(AMY) == queue.end())  {
+            if(pthread_cond_signal(&sheldonOrAmyInQueue) != 0) {
+                perror("Error on condition variable signal");
+                exit(EXIT_FAILURE); 
+            }
+            cout<<"Liberou a variavel condicional"<<endl;
+        }
+    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
+        if(pthread_cond_signal(&howardAndBernardetteInQueue) != 0) {
+            perror("Error on condition variable signal");
+            exit(EXIT_FAILURE); 
+        }
+        if(queue.find(LEONARD) == queue.end() && queue.find(PENNY) == queue.end())  {
+            if(pthread_cond_signal(&sheldonOrAmyInQueue) != 0) {
+                perror("Error on condition variable signal");
+                exit(EXIT_FAILURE); 
+            }
+            cout<<"Liberou a variavel condicional"<<endl;
         }
     }
 }
 
-void* Oven::RajStart(void* args) {
+/* void* Oven::RajStart(void* args) {
     Oven* object = (Oven*) args;
     int noUseTime = 0;
     while (1) {
@@ -65,7 +86,7 @@ void* Oven::RajStart(void* args) {
             sleep(5);
             continue;
         }
-        if (object->userQueue.empty()) {
+        if (object->characterQueue.empty()) {
             sleep(5);
             noUseTime+=5;
             if (noUseTime > 5) {
@@ -73,7 +94,7 @@ void* Oven::RajStart(void* args) {
             }
             continue;
         }
-        object->Use(object->userQueue.front());
+        object->Use(object->characterQueue.front());
     }
     return 0;
-}
+} */

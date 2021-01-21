@@ -1,56 +1,76 @@
+#include "constants.hpp"
 #include "oven.hpp"
 
-#include <algorithm>
-#include <iostream>
-#include <random>
 #include <pthread.h>
+#include <iostream>
+#include <stdio.h>
+#include <algorithm>
+#include <random>
+
 
 using std::cout;
-using std::default_random_engine;
 using std::endl;
+using std::default_random_engine;
 using std::shuffle;
 
+//string charactersName[NUMBER_CHARACTERS] = {SHELDON, AMY, HOWARD, BERNARDETTE, LEONARD, PENNY, STUART, KRIPKE};
+//string charactersName[NUMBER_CHARACTERS] = {SHELDON, AMY, HOWARD, BERNARDETTE};
+string charactersName[NUMBER_CHARACTERS] = {SHELDON};
+Oven oven;
+int amountOvenUse;
 
-void createQueue(int ovenTimes) {
-    Oven *oven = new Oven();
+void startThread(Character* character);
+void* characterRoutine(void* parameters);
 
-    User *users[8];
-    
-    users[0] = new User("Sheldon", ovenTimes);
-    users[1] = new User("Amy", ovenTimes);
-    users[2] = new User("Howard", ovenTimes);
-    users[3] = new User("Bernardette", ovenTimes);
-    users[4] = new User("Leonard", ovenTimes);
-    users[5] = new User("Penny", ovenTimes);
-    users[6] = new User("Stuart", ovenTimes);
-    users[7] = new User("Kripke", ovenTimes);
-
-    shuffle(users, users + sizeof(users) / sizeof(users[0]), default_random_engine(0));
-
-    for (int i = 0; i < 8; i++) {
-        oven->Wait(users[i]);
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        cout << "\n Inform exclusively the number of times the oven will be used!" << endl;
+        return 0;
     }
 
-    for (int i = 0; i < 8; i++) {
-        pthread_join(users[i]->t, NULL);
+    amountOvenUse = atoi(argv[1]);
+
+    Character *characters[NUMBER_CHARACTERS];
+    for(int i=0; i<NUMBER_CHARACTERS; i++) {
+        characters[i] = new Character(charactersName[i]);
     }
 
-    pthread_join(oven->raj, NULL);
+    random_device rd;
+    shuffle(characters, characters+NUMBER_CHARACTERS, default_random_engine(rd()));
+
+    for(Character* c : characters) {
+        startThread(c);
+    }
+
+    for (Character* c : characters) {
+       if(pthread_join(c->thread, NULL) !=0) {
+           perror("Error on joining thread");
+           exit(EXIT_FAILURE);
+       }
+    }
+    /* if(pthread_join(oven.raj, NULL) != 0) {
+        perror("Error on joining thread");
+        exit(EXIT_FAILURE);
+    } */
+
+    return 0;
 }
 
-int main(int paramsLen, char *params[]) {
-    if (paramsLen != 2) {
-        cout << "\n Numero de parametros invalido" << endl;
-        return 0;
+void startThread(Character* character) {
+    if(pthread_create(&(character->thread), NULL, characterRoutine, (void*) character) != 0) {
+        perror("Error on creating thread");
+        exit(EXIT_FAILURE);
     }
+}
 
-    int ovenTimes = atoi(params[1]);
-    if (ovenTimes < 1) {
-        cout << "\n Parametro invalido" << endl;
-        return 0;
+void* characterRoutine(void* parameters) {
+    Character* character = (Character*) parameters;
+    for(int i=0; i<amountOvenUse; i++) {
+        oven.wait(character);
+        character->useOven();
+        oven.free(character);
+        character->eat();
+        character->work();
     }
-
-    createQueue(ovenTimes);
-
     return 0;
 }
