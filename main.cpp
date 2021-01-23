@@ -1,4 +1,3 @@
-#include "constants.hpp"
 #include "oven.hpp"
 
 #include <pthread.h>
@@ -14,8 +13,8 @@ using std::default_random_engine;
 using std::shuffle;
 
 //string charactersName[NUMBER_CHARACTERS] = {SHELDON, AMY, HOWARD, BERNARDETTE, LEONARD, PENNY, STUART, KRIPKE};
-//string charactersName[NUMBER_CHARACTERS] = {SHELDON, AMY, HOWARD, BERNARDETTE};
-string charactersName[NUMBER_CHARACTERS] = {SHELDON};
+string charactersName[NUMBER_CHARACTERS] = {SHELDON, AMY, HOWARD, BERNARDETTE};
+//string charactersName[NUMBER_CHARACTERS] = {SHELDON};
 Oven oven;
 int amountOvenUse;
 

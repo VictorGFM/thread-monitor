@@ -2,15 +2,15 @@
 #define CHARACTER_H
 #endif
 
+#include "utils.hpp"
+
 #include <string>
-#include <vector>
 #include <iostream>
 #include <random>
 #include <pthread.h>
 #include <unistd.h>
 
 using std::string;
-using std::vector;
 using std::cout;
 using std::endl;
 using std::mt19937;
@@ -31,6 +31,5 @@ class Character {
         void useOven();
         void eat();
         void work();
-        bool CanUse(vector<Character*> queue);
         string getName();
 };

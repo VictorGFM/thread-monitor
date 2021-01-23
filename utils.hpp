@@ -1,5 +1,5 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef UTILS_H
+#define UTILS_H
 #endif
 
 #define SHELDON "Sheldon"
@@ -11,4 +11,5 @@
 #define STUART "Stuart"
 #define KRIPKE "Kripke"
 
-#define NUMBER_CHARACTERS 1
+#define NUMBER_CHARACTERS 4
+

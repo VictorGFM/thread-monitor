@@ -3,29 +3,65 @@
 #endif
 
 #include "character.hpp"
-#include "constants.hpp"
+
 #include <set>
+#include <string>
 #include <pthread.h>
 #include <unistd.h>
 
 using std::set;
+using std::string;
 
 class Oven {
     private:
         pthread_mutex_t mutex;
         pthread_cond_t sheldonOrAmyInQueue;
-        set<string> queue;
+        pthread_cond_t sheldonAndAmyInQueue;
+        pthread_cond_t howardOrBernardetteInQueue;
+        pthread_cond_t howardAndBernardetteInQueue;
+        pthread_cond_t leonardOrPennyInQueue;
+        pthread_cond_t leonardAndPennyInQueue;
+        pthread_cond_t coupleSheldonAmyInQueue;
+        
+        bool ovenInUse;
+
+        void characterWait(pthread_cond_t* varCond);
         
         /* static void* RajStart(void* args); */
     public:
         pthread_t raj;
 
         Oven() {
+            ovenInUse = false;
             if(pthread_mutex_init(&mutex, NULL) != 0) {
                 perror("Error on initializing mutex");
                 exit(EXIT_FAILURE); 
             }
             if(pthread_cond_init(&sheldonOrAmyInQueue, NULL) != 0) {
+                perror("Error on initializing condition variable");
+                exit(EXIT_FAILURE); 
+            }
+            if(pthread_cond_init(&sheldonAndAmyInQueue, NULL) != 0) {
+                perror("Error on initializing condition variable");
+                exit(EXIT_FAILURE); 
+            }
+            if(pthread_cond_init(&howardOrBernardetteInQueue, NULL) != 0) {
+                perror("Error on initializing condition variable");
+                exit(EXIT_FAILURE); 
+            }
+            if(pthread_cond_init(&howardAndBernardetteInQueue, NULL) != 0) {
+                perror("Error on initializing condition variable");
+                exit(EXIT_FAILURE); 
+            }
+            if(pthread_cond_init(&leonardOrPennyInQueue, NULL) != 0) {
+                perror("Error on initializing condition variable");
+                exit(EXIT_FAILURE); 
+            }
+            if(pthread_cond_init(&leonardAndPennyInQueue, NULL) != 0) {
+                perror("Error on initializing condition variable");
+                exit(EXIT_FAILURE); 
+            }
+            if(pthread_cond_init(&coupleSheldonAmyInQueue, NULL) != 0) {
                 perror("Error on initializing condition variable");
                 exit(EXIT_FAILURE); 
             }
