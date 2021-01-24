@@ -3,7 +3,7 @@
 set<string> queue;
 
 void printQueue(set<string> queue) {
-    cout << "FILA: ";
+    cout << "--------FILA: ";
     for(string character : queue) {
         cout << character << " ";
     }
@@ -12,12 +12,6 @@ void printQueue(set<string> queue) {
 
 bool queueContains(string name) {
     return queue.find(name) != queue.end();
-}
-
-bool queueContainsCouple() {
-    return ((queueContains(SHELDON) && queueContains(AMY))
-            || (queueContains(HOWARD) && queueContains(BERNARDETTE))
-            || (queueContains(LEONARD) && queueContains(PENNY)));
 }
 
 bool isCoupleInQueue(string name) {
@@ -38,6 +32,168 @@ bool isCoupleInQueue(string name) {
     }
 }
 
+void Oven::wait(Character* character) {
+
+    pthread_mutex_lock(&this->mutex);
+
+    cout << "‍🙋  ‍" << character->getName() << " quer usar o forno" << endl;
+    queue.insert(character->getName());
+
+    bool pairCalled = false;
+    if(isCoupleInQueue(character->getName())) {
+        if(character->getName() == SHELDON || character->getName() == AMY) {
+            characterWait(&this->coupleCallSheldonAmy);
+        } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
+            characterWait(&this->coupleCallHowardBernardette);
+        } else if(character->getName() == LEONARD || character->getName() == PENNY) {
+            characterWait(&this->coupleCallLeonardPenny);
+        }
+        pairCalled = true;
+    }
+    while(!havePriorityToUseOven(character, &pairCalled)) {
+        characterWait(&this->priorityToUseOven);
+    }
+
+    //printQueue(queue);
+    useOven();
+
+    pthread_mutex_unlock(&this->mutex);
+}
+
+bool Oven::havePriorityToUseOven(Character* character, bool* pairCalled) {
+    if(character->getName() == SHELDON || character->getName() == AMY) {
+        if(queueContains(LEONARD) && queueContains(PENNY)) {
+            if(*pairCalled) {
+                *pairCalled = false;
+            }
+            return false;
+        } else if(!isCoupleInQueue(character->getName()) && !(*pairCalled)) {
+            if(*pairCalled) {
+                *pairCalled = false;
+            }
+            if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
+                return false;
+            } else if(queueContains(LEONARD) || queueContains(PENNY)) {
+                return false;
+            } else if(isOvenInUse()) {
+                return false;
+            }
+        }
+        return true;
+    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
+        if(queueContains(SHELDON) && queueContains(AMY)) {
+            if(*pairCalled) {
+                *pairCalled = false;
+            }
+            return false;
+        } else if(!isCoupleInQueue(character->getName()) && !(*pairCalled)) {
+            if(*pairCalled) {
+                *pairCalled = false;
+            }
+            if(queueContains(LEONARD) && queueContains(PENNY)) {
+                return false;
+            } else if(queueContains(SHELDON) || queueContains(AMY)) {
+                return false;
+            } else if(isOvenInUse()) {
+                return false;
+            }
+        }
+        return true;
+    }  else if(character->getName() == LEONARD || character->getName() == PENNY) {
+        if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
+            if(*pairCalled) {
+                *pairCalled = false;
+            }
+            return false;
+        } else if(!isCoupleInQueue(character->getName()) && !(*pairCalled)) {
+            if(*pairCalled) {
+                *pairCalled = false;
+            }
+            if(queueContains(SHELDON) && queueContains(PENNY)) {
+                return false;
+            } else if(queueContains(HOWARD) || queueContains(BERNARDETTE)) {
+                return false;
+            } else if(isOvenInUse()) {
+                return false;
+            }
+        }
+        return true;
+    } else if(character->getName() == STUART) {
+        if(queueContains(SHELDON) || queueContains(AMY)
+            || queueContains(HOWARD) || queueContains(BERNARDETTE)
+            || queueContains(LEONARD) || queueContains(PENNY)) {
+            return false;
+        } else if(isOvenInUse()) {
+            return false;
+        }
+        return true;
+    } else  if(character->getName() == KRIPKE) {
+        if(queueContains(SHELDON) || queueContains(AMY)
+            || queueContains(HOWARD) || queueContains(BERNARDETTE)
+            || queueContains(LEONARD) || queueContains(PENNY)
+            || queueContains(STUART)) {
+            return false;
+        } else if(isOvenInUse()) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+void Oven::free(Character* character) {
+    pthread_mutex_lock(&this->mutex);
+
+    cout << "🍴  " << character->getName() << " vai comer" << endl;
+    freeOven();
+    queue.erase(character->getName());
+
+    if(character->getName() == SHELDON || character->getName() == AMY) {
+        if(isCoupleInQueue(character->getName())) {
+            pthread_cond_signal(&this->coupleCallSheldonAmy);
+            if(queueContains(LEONARD) && queueContains(PENNY)) {
+                pthread_cond_broadcast(&this->priorityToUseOven);
+            }
+        } else {
+            pthread_cond_broadcast(&this->priorityToUseOven);
+        }
+    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
+        if(isCoupleInQueue(character->getName())) {
+            pthread_cond_signal(&this->coupleCallHowardBernardette);
+            if(queueContains(SHELDON) && queueContains(AMY)) {
+                pthread_cond_broadcast(&this->priorityToUseOven);
+            }
+        } else {
+            pthread_cond_broadcast(&this->priorityToUseOven);
+        }
+    } else if(character->getName() == LEONARD || character->getName() == PENNY) {
+        if(isCoupleInQueue(character->getName())) {
+            pthread_cond_signal(&this->coupleCallLeonardPenny);
+            if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
+                pthread_cond_broadcast(&this->priorityToUseOven);
+            }
+        } else {
+            pthread_cond_broadcast(&this->priorityToUseOven);
+        }
+    } else if(character->getName() == STUART || character->getName() == KRIPKE) {
+        pthread_cond_broadcast(&this->priorityToUseOven);
+    }
+    
+    pthread_mutex_unlock(&this->mutex);
+}
+
+void Oven::useOven() {
+    this->ovenInUse = true;
+}
+
+void Oven::freeOven() {
+    this->ovenInUse = false;
+}
+
+bool Oven::isOvenInUse() {
+    return this->ovenInUse;
+}
+
 void Oven::characterWait(pthread_cond_t* varCond) {
     if(pthread_cond_wait(varCond, &this->mutex) != 0) {
         perror("Error on condition variable signal");
@@ -45,117 +201,9 @@ void Oven::characterWait(pthread_cond_t* varCond) {
     }
 }
 
-void Oven::wait(Character* character) {
-
-    pthread_mutex_lock(&this->mutex);
-
-    cout << character->getName() << " quer usar o forno" << endl;
-    queue.insert(character->getName());
-    printQueue(queue);
-
-    pthread_mutex_unlock(&this->mutex);
-
-
-    while(true) {
-        pthread_mutex_lock(&this->mutex);
-
-        if(character->getName() == SHELDON || character->getName() == AMY) {
-            if(isCoupleInQueue(character->getName())) { 
-                if(queueContains(LEONARD) && queueContains(PENNY)) {
-                    characterWait(&leonardAndPennyInQueue);
-                }
-                //characterWait(&coupleSheldonAmyInQueue);
-            } else {
-                if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
-                    characterWait(&howardAndBernardetteInQueue);
-                } 
-                if(queueContains(LEONARD) || queueContains(PENNY))  {
-                    characterWait(&leonardOrPennyInQueue);
-                } 
-            }
-        } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
-            if(isCoupleInQueue(character->getName())) {
-                if(queueContains(SHELDON) && queueContains(AMY)) {
-                    characterWait(&sheldonAndAmyInQueue);
-                }
-            } else {
-                if(queueContains(LEONARD) && queueContains(PENNY)) {
-                    characterWait(&leonardAndPennyInQueue);
-                }
-                if(queueContains(SHELDON) || queueContains(AMY))  {
-                    characterWait(&sheldonOrAmyInQueue);
-                }
-            }
-        } else if(character->getName() == LEONARD || character->getName() == PENNY) {
-            if(isCoupleInQueue(character->getName())) {
-                if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
-                    characterWait(&howardAndBernardetteInQueue);
-                }
-                //couple rule
-            } else {
-                if(queueContains(SHELDON) && queueContains(AMY)) {
-                    characterWait(&sheldonAndAmyInQueue);
-                }
-                if(queueContains(HOWARD) || queueContains(BERNARDETTE))  {
-                    characterWait(&howardOrBernardetteInQueue);
-                }
-            }
-        } 
-        if(!this->ovenInUse) {
-            this->ovenInUse = true;
-            pthread_mutex_unlock(&this->mutex);
-            break;
-        }
-    
-        pthread_mutex_unlock(&this->mutex);
-    }
-}
-
-void Oven::free(Character* character) {
-    pthread_mutex_lock(&this->mutex);
-
-    this->ovenInUse = false;
-    
-    queue.erase(character->getName());
-    cout << character->getName() << " vai comer" << endl;
-    
-    if(character->getName() == SHELDON || character->getName() == AMY) {
-        pthread_cond_signal(&sheldonAndAmyInQueue);
-        if(!isCoupleInQueue(character->getName())) {
-             pthread_cond_signal(&sheldonOrAmyInQueue);
-        }
-    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
-        pthread_cond_signal(&howardAndBernardetteInQueue);
-        if(!isCoupleInQueue(character->getName())) { // && !queueContainsCouple()
-             pthread_cond_signal(&howardOrBernardetteInQueue);
-        }
-    } else if(character->getName() == LEONARD || character->getName() == PENNY) {
-        pthread_cond_signal(&leonardAndPennyInQueue);
-        if(!isCoupleInQueue(character->getName())) {
-             pthread_cond_signal(&leonardOrPennyInQueue);
-        }
-    }
-
-    pthread_mutex_unlock(&this->mutex);
-}
-
-/* void* Oven::RajStart(void* args) {
+void* Oven::RajStart(void* args) {
     Oven* object = (Oven*) args;
-    int noUseTime = 0;
-    while (1) {
-        if (object->inUse) {
-            sleep(5);
-            continue;
-        }
-        if (object->characterQueue.empty()) {
-            sleep(5);
-            noUseTime+=5;
-            if (noUseTime > 5) {
-                break;
-            }
-            continue;
-        }
-        object->Use(object->characterQueue.front());
+    while(true) {
     }
     return 0;
-} */
+}

@@ -13,49 +13,64 @@ using std::default_random_engine;
 using std::shuffle;
 
 //string charactersName[NUMBER_CHARACTERS] = {SHELDON, AMY, HOWARD, BERNARDETTE, LEONARD, PENNY, STUART, KRIPKE};
-string charactersName[NUMBER_CHARACTERS] = {SHELDON, AMY, HOWARD, BERNARDETTE};
-//string charactersName[NUMBER_CHARACTERS] = {SHELDON};
+string charactersName[NUMBER_CHARACTERS] = {SHELDON, AMY, LEONARD, PENNY};
+
 Oven oven;
 int amountOvenUse;
 
-void startThread(Character* character);
+void validateParameters(int argc);
+void initializeCharacters(Character* characters[]);
+void shuffleCharacters(Character* characters[]);
+void startCharacterThread(Character* character);
 void* characterRoutine(void* parameters);
+void joinCharacterThread(Character* character);
+void joinRajThread(pthread_t* raj);
+
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        cout << "\n Inform exclusively the number of times the oven will be used!" << endl;
-        return 0;
-    }
 
+    validateParameters(argc);
     amountOvenUse = atoi(argv[1]);
 
-    Character *characters[NUMBER_CHARACTERS];
-    for(int i=0; i<NUMBER_CHARACTERS; i++) {
-        characters[i] = new Character(charactersName[i]);
-    }
+    Character* characters[NUMBER_CHARACTERS];
+    initializeCharacters(characters);
 
-    random_device rd;
-    shuffle(characters, characters+NUMBER_CHARACTERS, default_random_engine(rd()));
+    shuffleCharacters(characters);
 
     for(Character* c : characters) {
-        startThread(c);
+        startCharacterThread(c);
     }
 
     for (Character* c : characters) {
-       if(pthread_join(c->thread, NULL) !=0) {
-           perror("Error on joining thread");
-           exit(EXIT_FAILURE);
-       }
+        joinCharacterThread(c);
     }
-    /* if(pthread_join(oven.raj, NULL) != 0) {
-        perror("Error on joining thread");
-        exit(EXIT_FAILURE);
-    } */
+
+    joinRajThread(&oven.raj);
 
     return 0;
 }
 
-void startThread(Character* character) {
+void validateParameters(int argc) {
+    if (argc != 2) {
+        cout << "\n Inform exclusively the number of times the oven will be used!" << endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+void initializeCharacters(Character* characters[]) {
+    for(int i=0; i<NUMBER_CHARACTERS; i++) {
+        characters[i] = new Character(charactersName[i]);
+    }
+}
+
+void shuffleCharacters(Character* characters[]) {
+    random_device rd;
+    shuffle(characters, characters+NUMBER_CHARACTERS, default_random_engine(rd()));
+}
+
+
+
+void startCharacterThread(Character* character) {
     if(pthread_create(&(character->thread), NULL, characterRoutine, (void*) character) != 0) {
         perror("Error on creating thread");
         exit(EXIT_FAILURE);
@@ -72,4 +87,18 @@ void* characterRoutine(void* parameters) {
         character->work();
     }
     return 0;
+}
+
+void joinCharacterThread(Character* character) {
+    if(pthread_join(character->thread, NULL) !=0) {
+        perror("Error on joining thread");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void joinRajThread(pthread_t* raj) {
+    if(pthread_join(*raj, NULL) != 0) {
+        perror("Error on joining thread");
+        exit(EXIT_FAILURE);
+    }
 }
