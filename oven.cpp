@@ -16,7 +16,7 @@ void Oven::wait(Character* character) {
     while(!havePriorityToUseOven(character, &pairCalled)) {
         characterWait(&priorityToUseOven);
     }
-
+    
     useOven();
 
     pthread_mutex_unlock(&mutex);
@@ -28,7 +28,7 @@ void Oven::free(Character* character) {
     cout << "🍴  " << character->getName() << " vai comer" << endl;
     freeOven();
     queue.remove(character->getName());
-
+    
     if(isPairInQueue(character->getName())) {
         if(character->getName() == SHELDON || character->getName() == AMY) {
             characterSignal(&pairCallSheldonAmy);
@@ -202,16 +202,16 @@ void Oven::findFirstOfCouples(vector<string>* charactersName) {
     bool firstOfSheldonAndAmyFound = false; 
     bool firstOfHowardAndBernardette = false;
     bool firstOfLeonardAndPenny = false;
-    for(const auto& element : queue) {
-        if(!firstOfSheldonAndAmyFound && (element == SHELDON || element == AMY)) {
+    for(string name : queue) {
+        if(!firstOfSheldonAndAmyFound && (name == SHELDON || name == AMY)) {
             firstOfSheldonAndAmyFound = true;
-            charactersName->push_back(element);
-        } else if(!firstOfHowardAndBernardette && (element == HOWARD || element == BERNARDETTE)) {
+            charactersName->push_back(name);
+        } else if(!firstOfHowardAndBernardette && (name == HOWARD || name == BERNARDETTE)) {
             firstOfHowardAndBernardette = true;
-            charactersName->push_back(element);
-        } else if(!firstOfLeonardAndPenny && (element == LEONARD || element == PENNY)) {
+            charactersName->push_back(name);
+        } else if(!firstOfLeonardAndPenny && (name == LEONARD || name == PENNY)) {
             firstOfLeonardAndPenny = true;
-            charactersName->push_back(element);
+            charactersName->push_back(name);
         }
     }
 }

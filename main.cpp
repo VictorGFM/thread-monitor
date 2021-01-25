@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
 
     for(Character* c : characters) {
         startCharacterThread(c);
+        sleep(1);
     }
 
     for (Character* c : characters) {
