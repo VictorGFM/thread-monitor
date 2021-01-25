@@ -2,29 +2,103 @@
 
 void Oven::wait(Character* character) {
 
-    pthread_mutex_lock(&this->mutex);
+    pthread_mutex_lock(&mutex);
 
     cout << "‍🙋  ‍" << character->getName() << " quer usar o forno" << endl;
     queue.push_back(character->getName());
 
     bool pairCalled = false;
     if(isPairInQueue(character->getName())) {
-        if(character->getName() == SHELDON || character->getName() == AMY) {
-            characterWait(&this->coupleCallSheldonAmy);
-        } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
-            characterWait(&this->coupleCallHowardBernardette);
-        } else if(character->getName() == LEONARD || character->getName() == PENNY) {
-            characterWait(&this->coupleCallLeonardPenny);
-        }
+        waitPairCall(character->getName());
         pairCalled = true;
     }
+    
     while(!havePriorityToUseOven(character, &pairCalled)) {
-        characterWait(&this->priorityToUseOven);
+        characterWait(&priorityToUseOven);
     }
 
     useOven();
 
-    pthread_mutex_unlock(&this->mutex);
+    pthread_mutex_unlock(&mutex);
+}
+
+void Oven::free(Character* character) {
+    pthread_mutex_lock(&mutex);
+
+    cout << "🍴  " << character->getName() << " vai comer" << endl;
+    freeOven();
+    queue.remove(character->getName());
+
+    if(coupleDeadlockOccurred) {
+        if(character->getName() == getPairName(releasedCharacterDeadlock)) {
+            coupleDeadlockOccurred = false;
+            releasedCharacterDeadlock = "";
+        }
+    }
+
+    if(character->getName() == SHELDON || character->getName() == AMY) {
+        if(isPairInQueue(character->getName())) {
+            characterSignal(&pairCallSheldonAmy);
+            if(queueContains(LEONARD) && queueContains(PENNY)) {
+                characterBroadcast(&priorityToUseOven);
+            }
+        } else {
+            characterBroadcast(&priorityToUseOven);
+        }
+    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
+        if(isPairInQueue(character->getName())) {
+            characterSignal(&pairCallHowardBernardette);
+            if(queueContains(SHELDON) && queueContains(AMY)) {
+                characterBroadcast(&priorityToUseOven);
+            }
+        } else {
+            characterBroadcast(&priorityToUseOven);
+        }
+    } else if(character->getName() == LEONARD || character->getName() == PENNY) {
+        if(isPairInQueue(character->getName())) {
+            characterSignal(&pairCallLeonardPenny);
+            if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
+                characterBroadcast(&priorityToUseOven);
+            }
+        } else {
+            characterBroadcast(&priorityToUseOven);
+        }
+    } else if(character->getName() == STUART || character->getName() == KRIPKE) {
+        characterBroadcast(&priorityToUseOven);
+    }
+    
+    pthread_mutex_unlock(&mutex);
+}
+
+void Oven::verify() {
+    pthread_mutex_lock(&mutex);
+
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<int> distribution(0, 2);
+
+    switch(isQueueInDeadlock()) {
+        case MENS_DEADLOCK: {
+            string charactersName[3] = {SHELDON, HOWARD, LEONARD};
+            releasedCharacterDeadlock = charactersName[distribution(gen)];
+            characterBroadcast(&priorityToUseOven);
+            break;
+        } case WOMENS_DEADLOCK: {
+            string charactersName[3] = {AMY, BERNARDETTE, PENNY};
+            releasedCharacterDeadlock = charactersName[distribution(gen)];
+            characterBroadcast(&priorityToUseOven);
+            break;
+        } case COUPLE_DEADLOCK: {
+            vector<string> charactersName;
+            findFirstOfCouples(&charactersName);
+            releasedCharacterDeadlock = charactersName[distribution(gen)];
+            characterBroadcast(&priorityToUseOven);
+            break;
+        } default:
+            break;
+    }
+    
+    pthread_mutex_unlock(&mutex);
 }
 
 bool Oven::havePriorityToUseOven(Character* character, bool* pairCalled) {
@@ -118,85 +192,14 @@ bool Oven::havePriorityToUseOven(Character* character, bool* pairCalled) {
     }
 }
 
-void Oven::free(Character* character) {
-    pthread_mutex_lock(&this->mutex);
-
-    cout << "🍴  " << character->getName() << " vai comer" << endl;
-    freeOven();
-    queue.remove(character->getName());
-
-    if(coupleDeadlockOccurred) {
-        if(character->getName() == getPairName(releasedCharacterDeadlock)) {
-            coupleDeadlockOccurred = false;
-            releasedCharacterDeadlock = "";
-        }
+void Oven::waitPairCall(string name) {
+    if(name == SHELDON || name == AMY) {
+        characterWait(&pairCallSheldonAmy);
+    } else if(name == HOWARD || name == BERNARDETTE) {
+        characterWait(&pairCallHowardBernardette);
+    } else if(name == LEONARD || name == PENNY) {
+        characterWait(&pairCallLeonardPenny);
     }
-
-    if(character->getName() == SHELDON || character->getName() == AMY) {
-        if(isPairInQueue(character->getName())) {
-            characterSignal(&this->coupleCallSheldonAmy);
-            if(queueContains(LEONARD) && queueContains(PENNY)) {
-                characterBroadcast(&this->priorityToUseOven);
-            }
-        } else {
-            characterBroadcast(&this->priorityToUseOven);
-        }
-    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
-        if(isPairInQueue(character->getName())) {
-            characterSignal(&this->coupleCallHowardBernardette);
-            if(queueContains(SHELDON) && queueContains(AMY)) {
-                characterBroadcast(&this->priorityToUseOven);
-            }
-        } else {
-            characterBroadcast(&this->priorityToUseOven);
-        }
-    } else if(character->getName() == LEONARD || character->getName() == PENNY) {
-        if(isPairInQueue(character->getName())) {
-            characterSignal(&this->coupleCallLeonardPenny);
-            if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
-                characterBroadcast(&this->priorityToUseOven);
-            }
-        } else {
-            characterBroadcast(&this->priorityToUseOven);
-        }
-    } else if(character->getName() == STUART || character->getName() == KRIPKE) {
-        characterBroadcast(&this->priorityToUseOven);
-    }
-    
-    pthread_mutex_unlock(&this->mutex);
-}
-
-void Oven::verify() {
-    pthread_mutex_lock(&this->mutex);
-
-    random_device rd;
-    mt19937 gen(rd());
-
-    switch(isQueueInDeadlock()) {
-        case MENS_DEADLOCK: {
-            string charactersName[3] = {SHELDON, HOWARD, LEONARD};
-            uniform_int_distribution<int> distribution(0, 2);
-            releasedCharacterDeadlock = charactersName[distribution(gen)];
-            characterBroadcast(&this->priorityToUseOven);
-            break;
-        } case WOMENS_DEADLOCK: {
-            string charactersName[3] = {AMY, BERNARDETTE, PENNY};
-            uniform_int_distribution<int> distribution(0, 2);
-            releasedCharacterDeadlock = charactersName[distribution(gen)];
-            characterBroadcast(&this->priorityToUseOven);
-            break;
-        } case COUPLE_DEADLOCK: {
-            vector<string> charactersName;
-            findFirstOfCouples(&charactersName);
-            uniform_int_distribution<int> distribution(0, 2);
-            releasedCharacterDeadlock = charactersName[distribution(gen)];
-            characterBroadcast(&this->priorityToUseOven);
-            break;
-        } default:
-            break;
-    }
-    
-    pthread_mutex_unlock(&this->mutex);
 }
 
 void Oven::findFirstOfCouples(vector<string>* charactersName) {
@@ -274,34 +277,62 @@ int Oven::isQueueInDeadlock() {
 }
 
 void Oven::useOven() {
-    this->ovenInUse = true;
+    ovenInUse = true;
 }
 
 void Oven::freeOven() {
-    this->ovenInUse = false;
+    ovenInUse = false;
 }
 
 bool Oven::isOvenInUse() {
-    return this->ovenInUse;
+    return ovenInUse;
 }
 
-void Oven::characterWait(pthread_cond_t* varCond) {
-    if(pthread_cond_wait(varCond, &this->mutex) != 0) {
+void Oven::characterWait(pthread_cond_t* condVar) {
+    if(pthread_cond_wait(condVar, &mutex) != 0) {
         perror("Error on condition variable wait");
         exit(EXIT_FAILURE); 
     }
 }
 
-void Oven::characterSignal(pthread_cond_t* varCond) {
-    if(pthread_cond_signal(varCond) != 0) {
+void Oven::characterSignal(pthread_cond_t* condVar) {
+    if(pthread_cond_signal(condVar) != 0) {
         perror("Error on condition variable signal");
         exit(EXIT_FAILURE); 
     }
 }
 
-void Oven::characterBroadcast(pthread_cond_t* varCond) {
-    if(pthread_cond_broadcast(varCond) != 0) {
+void Oven::characterBroadcast(pthread_cond_t* condVar) {
+    if(pthread_cond_broadcast(condVar) != 0) {
         perror("Error on condition variable broadcast");
+        exit(EXIT_FAILURE); 
+    }
+}
+
+void Oven::initMutex(pthread_mutex_t* mutex) {
+    if(pthread_mutex_init(mutex, NULL) != 0) {
+        perror("Error on initializing mutex");
+        exit(EXIT_FAILURE); 
+    }
+}
+
+void Oven::initCondVar(pthread_cond_t* condVar) {
+    if(pthread_cond_init(condVar, NULL) != 0) {
+        perror("Error on initializing condition variable");
+        exit(EXIT_FAILURE); 
+    }
+}
+
+void Oven::destroyMutex(pthread_mutex_t* mutex) {
+    if(pthread_mutex_destroy(mutex) != 0) {
+        perror("Error on destroying mutex");
+        exit(EXIT_FAILURE); 
+    }
+}
+
+void Oven::destroyCondVar(pthread_cond_t* condVar) {
+    if(pthread_cond_destroy(condVar) != 0) {
+        perror("Error on destroying condition variable");
         exit(EXIT_FAILURE); 
     }
 }

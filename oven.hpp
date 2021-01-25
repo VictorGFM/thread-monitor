@@ -22,12 +22,14 @@ class Oven {
         bool ovenInUse;
         pthread_mutex_t mutex;
         pthread_cond_t priorityToUseOven;
-        pthread_cond_t coupleCallSheldonAmy;
-        pthread_cond_t coupleCallHowardBernardette;
-        pthread_cond_t coupleCallLeonardPenny;
+        pthread_cond_t pairCallSheldonAmy;
+        pthread_cond_t pairCallHowardBernardette;
+        pthread_cond_t pairCallLeonardPenny;
         string releasedCharacterDeadlock;
         bool coupleDeadlockOccurred;
 
+        bool havePriorityToUseOven(Character* character, bool* pairCalled);
+        void waitPairCall(string name);
         void findFirstOfCouples(vector<string>* charactersName);
         bool queueContains(string name);
         string getPairName(string name);
@@ -37,59 +39,33 @@ class Oven {
         void useOven();
         void freeOven();
         bool isOvenInUse();
-        void characterWait(pthread_cond_t* varCond);
-        void characterSignal(pthread_cond_t* varCond);
-        void characterBroadcast(pthread_cond_t* varCond);
-        bool havePriorityToUseOven(Character* character, bool* pairCalled);
+        void characterWait(pthread_cond_t* condVar);
+        void characterSignal(pthread_cond_t* condVar);
+        void characterBroadcast(pthread_cond_t* condVar);
+        void initMutex(pthread_mutex_t* mutex);
+        void initCondVar(pthread_cond_t* condVar);
+        void destroyMutex(pthread_mutex_t* mutex);
+        void destroyCondVar(pthread_cond_t* condVar);
     public:
 
         Oven() {
             ovenInUse = false;
             releasedCharacterDeadlock = "";
             coupleDeadlockOccurred = false;
-            if(pthread_mutex_init(&mutex, NULL) != 0) {
-                perror("Error on initializing mutex");
-                exit(EXIT_FAILURE); 
-            }
-            if(pthread_cond_init(&priorityToUseOven, NULL) != 0) {
-                perror("Error on initializing condition variable");
-                exit(EXIT_FAILURE); 
-            }
-            if(pthread_cond_init(&coupleCallSheldonAmy, NULL) != 0) {
-                perror("Error on initializing condition variable");
-                exit(EXIT_FAILURE); 
-            }
-            if(pthread_cond_init(&coupleCallHowardBernardette, NULL) != 0) {
-                perror("Error on initializing condition variable");
-                exit(EXIT_FAILURE); 
-            }
-            if(pthread_cond_init(&coupleCallLeonardPenny, NULL) != 0) {
-                perror("Error on initializing condition variable");
-                exit(EXIT_FAILURE); 
-            }
+
+            initMutex(&mutex);
+            initCondVar(&priorityToUseOven);
+            initCondVar(&pairCallSheldonAmy);
+            initCondVar(&pairCallHowardBernardette);
+            initCondVar(&pairCallLeonardPenny);
         };
 
         ~Oven() {
-            if(pthread_mutex_destroy(&mutex) != 0) {
-                perror("Error on destroying mutex");
-                exit(EXIT_FAILURE); 
-            }
-            if(pthread_cond_destroy(&priorityToUseOven) != 0) {
-                perror("Error on destroying condition variable");
-                exit(EXIT_FAILURE); 
-            }
-            if(pthread_cond_destroy(&coupleCallSheldonAmy) != 0) {
-                perror("Error on destroying condition variable");
-                exit(EXIT_FAILURE); 
-            }
-            if(pthread_cond_destroy(&coupleCallHowardBernardette) != 0) {
-                perror("Error on destroying condition variable");
-                exit(EXIT_FAILURE); 
-            }
-            if(pthread_cond_destroy(&coupleCallLeonardPenny) != 0) {
-                perror("Error on destroying condition variable");
-                exit(EXIT_FAILURE); 
-            }
+            destroyMutex(&mutex);
+            destroyCondVar(&priorityToUseOven);
+            destroyCondVar(&pairCallSheldonAmy);
+            destroyCondVar(&pairCallHowardBernardette);
+            destroyCondVar(&pairCallLeonardPenny);
         }
 
         void wait(Character* character);
