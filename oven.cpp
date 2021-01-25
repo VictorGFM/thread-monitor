@@ -29,41 +29,15 @@ void Oven::free(Character* character) {
     freeOven();
     queue.remove(character->getName());
 
-    if(coupleDeadlockOccurred) {
-        if(character->getName() == getPairName(releasedCharacterDeadlock)) {
-            coupleDeadlockOccurred = false;
-            releasedCharacterDeadlock = "";
-        }
-    }
-
-    if(character->getName() == SHELDON || character->getName() == AMY) {
-        if(isPairInQueue(character->getName())) {
+    if(isPairInQueue(character->getName())) {
+        if(character->getName() == SHELDON || character->getName() == AMY) {
             characterSignal(&pairCallSheldonAmy);
-            if(queueContains(LEONARD) && queueContains(PENNY)) {
-                characterBroadcast(&priorityToUseOven);
-            }
-        } else {
-            characterBroadcast(&priorityToUseOven);
-        }
-    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
-        if(isPairInQueue(character->getName())) {
+        }  else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
             characterSignal(&pairCallHowardBernardette);
-            if(queueContains(SHELDON) && queueContains(AMY)) {
-                characterBroadcast(&priorityToUseOven);
-            }
-        } else {
-            characterBroadcast(&priorityToUseOven);
-        }
-    } else if(character->getName() == LEONARD || character->getName() == PENNY) {
-        if(isPairInQueue(character->getName())) {
+        } else if(character->getName() == LEONARD || character->getName() == PENNY) {
             characterSignal(&pairCallLeonardPenny);
-            if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
-                characterBroadcast(&priorityToUseOven);
-            }
-        } else {
-            characterBroadcast(&priorityToUseOven);
         }
-    } else if(character->getName() == STUART || character->getName() == KRIPKE) {
+    } else {
         characterBroadcast(&priorityToUseOven);
     }
     
@@ -105,88 +79,110 @@ bool Oven::havePriorityToUseOven(Character* character, bool* pairCalled) {
     if(isQueueInDeadlock()) {
         if(character->getName() == releasedCharacterDeadlock) {
             cout << "💀  Raj detectou um deadlock, liberando " << releasedCharacterDeadlock << endl;
-            if(isQueueInDeadlock() == COUPLE_DEADLOCK) {
-                coupleDeadlockOccurred = true;
-            } else {
-                releasedCharacterDeadlock = "";
-            }
-            return true;
-        } else {
-            return false;
-        }
-    } else if(coupleDeadlockOccurred) {
-        if(character->getName() == getPairName(releasedCharacterDeadlock)) {
+            releasedCharacterDeadlock = "";
             return true;
         } else {
             return false;
         }
     } else if(character->getName() == SHELDON || character->getName() == AMY) {
-        if(queueContains(LEONARD) && queueContains(PENNY)) {
-            if(*pairCalled) {
-                *pairCalled = false;
+        if(isPairInQueue(character->getName())) {
+            if(queueContains(LEONARD) && queueContains(PENNY)) {
+                return false;
             }
-            return false;
-        } else if(!isPairInQueue(character->getName()) && !(*pairCalled)) {
-            if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
+        } else if(*pairCalled) {
+            *pairCalled = false;
+            if((queueContains(LEONARD) && queueContains(PENNY)) 
+                && !(queueContains(HOWARD) && queueContains(BERNARDETTE))) {
+                characterBroadcast(&priorityToUseOven);
+                return false;
+            }
+        } else {
+            if((queueContains(LEONARD) && queueContains(PENNY)) 
+                || (queueContains(HOWARD) && queueContains(BERNARDETTE))) {
                 return false;
             } else if(queueContains(LEONARD) || queueContains(PENNY)) {
                 return false;
-            } else if(isOvenInUse()) {
-                return false;
             }
         }
-        return true;
-    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
-        if(queueContains(SHELDON) && queueContains(AMY)) {
-            if(*pairCalled) {
-                *pairCalled = false;
-            }
+        if(isOvenInUse()) {
             return false;
-        } else if(!isPairInQueue(character->getName()) && !(*pairCalled)) {
-            if(queueContains(LEONARD) && queueContains(PENNY)) {
+        } else {
+            return true;
+        }
+    
+    } else if(character->getName() == HOWARD || character->getName() == BERNARDETTE) {
+        if(isPairInQueue(character->getName())) {
+            if(queueContains(SHELDON) && queueContains(AMY)) {
+                return false;
+            }
+        } else if(*pairCalled) {
+            *pairCalled = false;
+            if((queueContains(SHELDON) && queueContains(AMY)) 
+                && !(queueContains(LEONARD) && queueContains(PENNY))) {
+                characterBroadcast(&priorityToUseOven);
+                return false;
+            }
+        } else {
+            if((queueContains(SHELDON) && queueContains(AMY)) 
+                || (queueContains(LEONARD) && queueContains(PENNY))) {
                 return false;
             } else if(queueContains(SHELDON) || queueContains(AMY)) {
                 return false;
-            } else if(isOvenInUse()) {
-                return false;
             }
         }
-        return true;
-    }  else if(character->getName() == LEONARD || character->getName() == PENNY) {
-        if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
-            if(*pairCalled) {
-                *pairCalled = false;
-            }
+        if(isOvenInUse()) {
             return false;
-        } else if(!isPairInQueue(character->getName()) && !(*pairCalled)) {
-            if(queueContains(SHELDON) && queueContains(PENNY)) {
+        } else {
+            return true;
+        }
+    }  else if(character->getName() == LEONARD || character->getName() == PENNY) {
+        if(isPairInQueue(character->getName())) {
+            if(queueContains(HOWARD) && queueContains(BERNARDETTE)) {
+                return false;
+            }
+        } else if(*pairCalled) {
+            *pairCalled = false;
+            if((queueContains(HOWARD) && queueContains(BERNARDETTE))
+                && !(queueContains(SHELDON) && queueContains(AMY))) {
+                characterBroadcast(&priorityToUseOven);
+                return false;
+            }
+        } else {
+            if((queueContains(HOWARD) && queueContains(BERNARDETTE))
+                || (queueContains(SHELDON) && queueContains(AMY))) {
                 return false;
             } else if(queueContains(HOWARD) || queueContains(BERNARDETTE)) {
                 return false;
-            } else if(isOvenInUse()) {
-                return false;
             }
         }
-        return true;
+        if(isOvenInUse()) {
+            return false;
+        } else {
+            return true;
+        }
     } else if(character->getName() == STUART) {
         if(queueContains(SHELDON) || queueContains(AMY)
             || queueContains(HOWARD) || queueContains(BERNARDETTE)
             || queueContains(LEONARD) || queueContains(PENNY)) {
             return false;
-        } else if(isOvenInUse()) {
-            return false;
         }
-        return true;
+        if(isOvenInUse()) {
+            return false;
+        } else {
+            return true;
+        }
     } else  if(character->getName() == KRIPKE) {
         if(queueContains(SHELDON) || queueContains(AMY)
             || queueContains(HOWARD) || queueContains(BERNARDETTE)
             || queueContains(LEONARD) || queueContains(PENNY)
             || queueContains(STUART)) {
             return false;
-        } else if(isOvenInUse()) {
-            return false;
         }
-        return true;
+        if(isOvenInUse()) {
+            return false;
+        } else {
+            return true;
+        }
     } else {
         return false;
     }

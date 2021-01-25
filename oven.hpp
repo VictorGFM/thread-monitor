@@ -26,7 +26,6 @@ class Oven {
         pthread_cond_t pairCallHowardBernardette;
         pthread_cond_t pairCallLeonardPenny;
         string releasedCharacterDeadlock;
-        bool coupleDeadlockOccurred;
 
         bool havePriorityToUseOven(Character* character, bool* pairCalled);
         void waitPairCall(string name);
@@ -51,7 +50,6 @@ class Oven {
         Oven() {
             ovenInUse = false;
             releasedCharacterDeadlock = "";
-            coupleDeadlockOccurred = false;
 
             initMutex(&mutex);
             initCondVar(&priorityToUseOven);
