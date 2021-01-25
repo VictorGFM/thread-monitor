@@ -4,32 +4,49 @@
 
 #include "character.hpp"
 
-#include <set>
+#include <list>
+#include <vector>
+#include <algorithm>
 #include <string>
 #include <pthread.h>
 #include <unistd.h>
 
-using std::set;
+using std::list;
+using std::find;
 using std::string;
+using std::vector;
 
 class Oven {
     private:
+        list<string> queue;
         bool ovenInUse;
         pthread_mutex_t mutex;
         pthread_cond_t priorityToUseOven;
         pthread_cond_t coupleCallSheldonAmy;
         pthread_cond_t coupleCallHowardBernardette;
         pthread_cond_t coupleCallLeonardPenny;
-        
-        void characterWait(pthread_cond_t* varCond);
-        bool havePriorityToUseOven(Character* character, bool* pairCalled);
-        static void* RajStart(void* args);
+        string releasedCharacterDeadlock;
+        bool coupleDeadlockOccurred;
 
+        void findFirstOfCouples(vector<string>* charactersName);
+        bool queueContains(string name);
+        string getPairName(string name);
+        bool isPairInQueue(string name);
+        bool isCharacterInQueueWithoutPair(string name);
+        int isQueueInDeadlock();
+        void useOven();
+        void freeOven();
+        bool isOvenInUse();
+        void characterWait(pthread_cond_t* varCond);
+        void characterSignal(pthread_cond_t* varCond);
+        void characterBroadcast(pthread_cond_t* varCond);
+        bool havePriorityToUseOven(Character* character, bool* pairCalled);
     public:
-        pthread_t raj;
 
         Oven() {
             ovenInUse = false;
+            releasedCharacterDeadlock = "";
+            coupleDeadlockOccurred = false;
             if(pthread_mutex_init(&mutex, NULL) != 0) {
                 perror("Error on initializing mutex");
                 exit(EXIT_FAILURE); 
@@ -49,10 +66,6 @@ class Oven {
             if(pthread_cond_init(&coupleCallLeonardPenny, NULL) != 0) {
                 perror("Error on initializing condition variable");
                 exit(EXIT_FAILURE); 
-            }
-            if(pthread_create(&raj, NULL, RajStart, (void*) this) < 0) {
-                cout << "Error on creating thread!" << endl;
-                exit(EXIT_FAILURE);
             }
         };
 
@@ -81,7 +94,5 @@ class Oven {
 
         void wait(Character* character);
         void free(Character* character);
-        void useOven();
-        void freeOven();
-        bool isOvenInUse();
+        void verify();
 };

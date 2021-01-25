@@ -11,5 +11,8 @@
 #define STUART "Stuart"
 #define KRIPKE "Kripke"
 
-#define NUMBER_CHARACTERS 4
+#define NUMBER_CHARACTERS 8
 
+#define MENS_DEADLOCK 1
+#define WOMENS_DEADLOCK 2
+#define COUPLE_DEADLOCK 3
