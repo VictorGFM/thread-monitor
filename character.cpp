@@ -5,7 +5,7 @@ mt19937 gen(rd());
 uniform_int_distribution<int> distribution(3, 6);
 
 void Character::useOven() {
-    cout << "🔥  " << name << " comeca a esquentar algo" << endl;
+    cout << "🔥  " << name << " começa a esquentar algo" << endl;
     sleep(1);
 }
 

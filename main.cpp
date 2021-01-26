@@ -30,9 +30,9 @@ void joinCharacterThread(pthread_t thread);
 
 
 int main(int argc, char *argv[]) {
-    validateParameters(argc);
-
     pthread_t raj;
+
+    validateParameters(argc);
     amountOvenUse = atoi(argv[1]);
 
     Character* characters[NUMBER_CHARACTERS];
