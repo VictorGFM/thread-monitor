@@ -4,7 +4,7 @@ void Oven::wait(Character* character) {
 
     pthread_mutex_lock(&mutex);
 
-    cout << "‍🙋  ‍" << character->getName() << " quer usar o forno" << endl;
+    cout << character->getName() << " quer usar o forno" << endl;
     queue.push_back(character->getName());
 
     if(isPairInQueue(character->getName())) {
@@ -23,7 +23,7 @@ void Oven::wait(Character* character) {
 void Oven::free(Character* character) {
     pthread_mutex_lock(&mutex);
 
-    cout << "🍴  " << character->getName() << " vai comer" << endl;
+    cout << character->getName() << " vai comer" << endl;
     freeOven();
     queue.remove(character->getName());
     
@@ -79,7 +79,7 @@ void Oven::verify() {
 bool Oven::havePriorityToUseOven(Character* character) {
     if(isQueueInDeadlock()) {
         if(character->getName() == releasedCharacterDeadlock) {
-            cout << "💀  Raj detectou um deadlock, liberando " << releasedCharacterDeadlock << endl;
+            cout << "Raj detectou um deadlock, liberando " << releasedCharacterDeadlock << endl;
             releasedCharacterDeadlock = "";
             return true;
         } else {
