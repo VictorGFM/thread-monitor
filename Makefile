@@ -1,4 +1,4 @@
-ALL = tp1
+ALL = thread-monitor
 SRC = $(wildcard *.cpp)
 OBJ = $(patsubst %.cpp, %.o, $(wildcard *.cpp))
 
